@@ -17,12 +17,16 @@ description: 功能或畫面寫完後，在 iPhone Duo 模擬器上自己跑一�
 | `scripts/duo_pose.sh <closed\|book\|open>` | 用 RocketSim 切姿態並讀回 hinge 確認，不符就重設，最多 3 次 |
 | `scripts/duo_rotate.sh` | 點 Device Hub 的 Rotate Right 一次（RocketSim 沒有旋轉指令） |
 | `scripts/duo_check.py <elements.json> --pose P [--baseline parent.json]` | 依實測 safe area 與折痕位置檢查元素座標；exit 1＝有 FAIL，2＝無法判斷 |
+| `scripts/safe-xcodebuild.sh <參數>\|--check` | 這台機器有別的 xcodebuild 在跑就 exit 1、印出對方 PID 和指令；沒有才執行 |
 | `scripts/devicehub_pose.sh "Closed\|Partially Open\|Open"` | 沒有 RocketSim 時，用 Device Hub 切姿態 |
 | `probe/build.sh` | 探針 app：遇到 `duo_check.py` 不認得的畫面尺寸時，用它量 safe area |
 
 ## 0. 前置檢查（任一不過就停下來回報，不要硬跑）
 
-1. **要 build 時**，先用**單獨一個指令**跑 `ps -eo pid=,etime=,command= | grep "[x]codebuild" | grep -v mcp`。有輸出就停，告訴使用者誰在跑，不要 build。不要把這個檢查和 build 寫在同一行：檢查的結果擋不住後面的指令。只用已安裝的 app、不 build 時，別人的 xcodebuild 不影響，照常跑。
+1. **要 build 時，一律經過 `$H/scripts/safe-xcodebuild.sh`**：這台機器有別的 xcodebuild 在跑，它會 exit 1 並印出對方的 PID 和指令。exit 1 就停，把對方的 PID 和指令告訴使用者，不要 build、不要重試到通過。
+   - 自己下 xcodebuild：`$H/scripts/safe-xcodebuild.sh <xcodebuild 參數>`，取代直接呼叫 `xcodebuild`。
+   - 用 XcodeBuildMCP 或 Desktop 內建的 build：它們不經過這支腳本，先**單獨一個指令**跑 `$H/scripts/safe-xcodebuild.sh --check`，exit 0 才 build。
+   - 只用已安裝的 app、不 build 時，別人的 xcodebuild 不影響，照常跑。
 2. `xcrun simctl list devices booted | grep "iPhone Duo"` 拿 UDID（下稱 `$D`）。沒有就請使用者開一台。
 3. `rocketsim duo hinge --udid $D` 回 `ok:true`。回 `app_not_running` 就 `open -a RocketSim` 後重試。
    - 回 `quota_exceeded`（免費版每日次數用完）或沒裝 RocketSim：**不要想辦法繞過次數限制**。改走「看圖模式」：
@@ -49,7 +53,7 @@ description: 功能或畫面寫完後，在 iPhone Duo 模擬器上自己跑一�
 
 ## 1. Build 並開到目標畫面
 
-- Build／安裝：CLI 用 XcodeBuildMCP `build_run_sim`（先 `session_show_defaults`）；Desktop app 用內建模擬器面板。scheme 用專案平常開發用的那個。
+- Build／安裝：先過第 0 步第 1 條。CLI 用 `safe-xcodebuild.sh` 或 XcodeBuildMCP `build_run_sim`（先 `session_show_defaults`）；Desktop app 用內建模擬器面板。scheme 用專案平常開發用的那個。
 - 在**進入目標畫面前**，於上一層畫面拍 baseline：`rocketsim elements --udid $D > $RUN/baseline.json`。RocketSim 會把被 fullScreenCover／sheet 蓋住的下層元素也列出來，`--baseline` 用來排除它們。如果已經在目標畫面裡，要離開才能拍：離開的動作會付費、送出資料或結束一段流程時，先問使用者，不要自己按。
 - 走到目標畫面。操作用 `rocketsim interact tap --label ... --screen latest --udid $D`。
 
@@ -68,6 +72,12 @@ python3 $H/scripts/duo_check.py $RUN/<pose>_r<n>.json --pose <pose> --baseline $
 ```
 
 姿態順序 closed → book → open，每個姿態旋轉 0–3。一個 shell 指令裡不要 `rm`；換新資料夾即可。
+
+**每轉一次都要確認真的轉了，以及 app 有沒有跟著轉。** 轉完用 `xcrun devicectl device info displays --device $D` 讀亮著那一面（`active: true`）的 `currentOrientation`（rot0 直向、rot90／rot270 橫向、rot180 上下顛倒），再對照 `elements` 的 canvasSize。app 不支援的方向，裝置轉了、畫面停在 app 支援的方向。
+- devicectl 是 rot180（上下顛倒）：canvasSize 和直向一樣都是 669×951 或 466×678，光看尺寸分不出 app 有沒有轉。跟直向那格的截圖比，一模一樣就是 app 不支援上下顛倒，這一格記「app 不支援此方向，畫面停在直向」，不重複判讀。
+- devicectl 的方向變了，但 canvasSize 的長寬方向跟它對不上（例：rot90 卻還是 669×951）：同樣記「app 不支援此方向」。
+- 外螢幕鎖直向的 app，四個方向的畫面都一樣，同樣在報告註明。
+- devicectl 的方向也沒變：才是旋轉失敗，這一格標「無法判斷」。不要以為是旋轉失敗就一直重按，先看 devicectl。
 
 每一格另外做：
 1. **讀截圖**（Read 圖檔）：文字有沒有被截斷、元件有沒有重疊、跟預期長相是否一致。
