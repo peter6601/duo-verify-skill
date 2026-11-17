@@ -59,7 +59,8 @@ duo-verify/
 │   ├── duo_check.py          用實測 safe area 和折痕位置檢查元素座標
 │   ├── duo_pose.sh           用 RocketSim 切姿態並讀回確認
 │   ├── duo_rotate.sh         點 Device Hub 的 Rotate Right
-│   └── devicehub_pose.sh     沒有 RocketSim 時，用 Device Hub 切姿態
+│   ├── devicehub_pose.sh     沒有 RocketSim 時，用 Device Hub 切姿態
+│   └── safe-xcodebuild.sh    有別的 xcodebuild 在跑就拒絕執行，避免搶同一個模擬器
 └── probe/
     ├── main.swift            探針 app：在畫面上印出 safe area 與 hinge 狀態
     ├── Info.plist
