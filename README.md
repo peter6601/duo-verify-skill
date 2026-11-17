@@ -20,11 +20,39 @@
 | macOS ＋ Xcode 27.1 以上 | 必須 | 實測用 Xcode 27.2 |
 | iOS 27.1 以上 runtime（含 iPhone Duo） | 必須 | |
 | Claude Code（Desktop 或 CLI） | 擇一 | Desktop 可設任意角度；CLI 只有三個固定姿態 |
-| [RocketSim](https://www.rocketsim.app/) | 自動判讀需要 | 讀按鈕座標、點擊；CLI 也靠它切姿態。免費版每天的次數有限 |
+| SimPilot 或 [RocketSim](https://www.rocketsim.app/) | 自動判讀需要（擇一） | 讀按鈕座標、點擊。兩者的差異見下方「讀元素的引擎」 |
 | Device Hub ＋ 終端機「輔助使用」權限 | CLI 旋轉才需要 | Desktop 不需要 |
 | Python 3 | 必須 | 跑 `duo_check.py`，只用標準函式庫 |
 
-沒有 RocketSim 也能跑，skill 會改走「看圖模式」：由 Claude 看截圖判斷，精確度到不了 pt，報告會註明。
+兩個引擎都沒有也能跑，skill 會改走「看圖模式」：由 Claude 看截圖判斷，精確度到不了 pt，報告會註明。
+
+## 讀元素的引擎
+
+讀按鈕座標和點擊可以用兩個引擎，輸出的 JSON 格式相同，`duo_check.py` 都能直接讀。在 Xcode 27.2 的 12 格矩陣（3 個姿態 × 4 個旋轉）實測，兩邊的 FAIL／WARN 逐格一致。
+
+| | SimPilot | RocketSim |
+|---|---|---|
+| 是什麼 | 作者自製的 CLI＋選單列 app，在模擬器裡常駐一個 XCUITest server，附掛已在跑的 app（不重啟） | 第三方 Mac app 的 CLI |
+| 次數限制 | 無 | 免費版每天的 agent session 有限 |
+| 速度 | 第一次約 15 秒（啟動 runner），之後讀元素 0.3–1 秒、點擊約 2 秒 | — |
+| 切姿態、讀 hinge | 不支援（Desktop 用內建工具，CLI 用 Device Hub） | CLI 可用 `duo_pose.sh` 切三個固定姿態、讀 hinge |
+| 取得 | 目前未公開 | [rocketsim.app](https://www.rocketsim.app/) |
+
+叫用時可以指定引擎；沒指定時，裝了 SimPilot 就用 SimPilot，RocketSim 回報當日次數用完時也會改用 SimPilot。報告第一行會註明這次用的是哪個引擎。
+
+| 動作 | SimPilot | RocketSim |
+|---|---|---|
+| 讀元素 | `simpilot elements --udid <UDID>` | `rocketsim elements --udid <UDID>` |
+| 點擊 | `simpilot interact tap --label <文字> --udid <UDID>` | `rocketsim interact tap --label <文字> --screen latest --udid <UDID>` |
+| 截圖 | `xcrun simctl io <UDID> screenshot --display=primary`（外螢幕）或 `primary-1`（內螢幕） | `rocketsim screenshot --udid <UDID>` |
+| 跑完後 | `simpilot stop`，讓出 xcodebuild | — |
+
+兩者的行為差異：
+
+- **被蓋住的元素**：RocketSim 會列出被 sheet、fullScreenCover 蓋住的下層元素，要靠 `--baseline` 排除；SimPilot 只列畫面上看得到的，元素數比較少，`--baseline` 照樣可用。
+- **同名按鈕**：SimPilot 只點可點擊（hittable）的元素、button 優先；畫面上和確認視窗裡有同名按鈕時，RocketSim 可能點到別的元素。
+- **點擊結果**：SimPilot 除了 `screen_changed`、`appeared`、`disappeared`，還回 `moved`（位置變了的 label，例如兩張卡片對調）和 `value_changed`。
+- **xcodebuild**：SimPilot 的 runner 本身是一個 xcodebuild，跑著時 `safe-xcodebuild.sh` 會擋掉其他 build。閒置 3 分鐘會自己關，矩陣跑完 skill 也會跑 `simpilot stop`。
 
 ## 安裝
 
@@ -47,6 +75,7 @@ ln -s "$PWD/duo-verify-skill/duo-verify" ~/.claude/skills/duo-verify
 - **要驗的畫面**：從 app 首頁怎麼走到那裡
 - **預期長相**：一兩句描述，或 Figma 連結；沒給就只做規則檢查
 - **主要按鈕**：要點的按鈕，加上點了應該發生什麼
+- **引擎**（選填）：`simpilot` 或 `rocketsim`
 
 模擬器上只登入**測試帳號**：截圖會傳給模型。
 
@@ -83,6 +112,8 @@ duo-verify/
 - 轉軸有遲滯：同一個角度，亮外螢幕還是內螢幕要看怎麼折過來。一律以畫面尺寸判斷。
 - 折痕位置是推算的（畫面中線 ±10pt），模擬器截圖畫不出折痕。
 - 旋轉依賴 Device Hub 的視窗結構，Xcode 改版可能失效。
+- `xcrun devicectl device orientation set／rotate` 在 Duo 上回報成功但畫面不會轉，不能拿來取代 Device Hub。
+- SimPilot 的 `moved` 只看 label 和位置：打開 sheet 時，被蓋住的元素和 sheet 裡的同名元素也會算進來。
 
 ## 授權
 
