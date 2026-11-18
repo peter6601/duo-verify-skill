@@ -1,81 +1,81 @@
 # duo-verify
 
-讓 Claude Code 在 **iPhone Duo 模擬器**上自己驗一個畫面的 skill。
+讓 Claude Code 在 **iPhone Duo 模擬器**上，自己幫你驗一個畫面。
+
+## 目的
+
+- iPhone Duo 是折疊機：有外螢幕、內螢幕，中間有折痕。
+- 同一個畫面，要在不同姿態、不同方向都正常。
+- 一般 iPhone 測不出 Duo 的問題：Duo 的狀態列在側邊，還多了折痕。
+- 手動一格一格折、一格一格看，很花時間，也容易漏。
+- 這個 skill 讓 Claude 自動跑完，交回一張問題清單。
+
+## 可以得到什麼
 
 功能寫完後打 `/duo-verify`，Claude 會：
 
-- 把 Duo 切到 closed、book（半折）、open 三個姿態；book、open 各旋轉 4 個方向，closed 1 格（模擬器闔起時不旋轉），共 9 格
-- 讀每個按鈕的座標，自動檢查有沒有壓到狀態列、home indicator 區，或橫跨折痕
-- 實際點主要按鈕，確認有反應
-- 換姿態後確認畫面狀態有保留
-- 看截圖對照你給的預期長相
-- 交一份「姿態 × 旋轉」的矩陣報告
+- 把 Duo 切到 closed（闔起）、book（半折）、open（攤開）。
+- book、open 各轉 4 個方向，closed 1 格，共 9 格。
+- 讀每顆按鈕的位置，算它有沒有壓到狀態列、底部橫條或折痕。
+- 實際點你指定的按鈕，確認有反應。
+- 換姿態後，確認畫面還在、沒被踢回首頁。
+- 看截圖，對照你描述的樣子。
 
-結論只會說「在這張矩陣內，模擬器上有沒有問題」。真機的手感、效能、實體折痕，模擬器測不到。
+最後交一份報告：
 
-## 需要的環境
+- 第一行就是結論：沒問題、有幾個問題，或有幾格無法判斷。
+- 一張 9 格表：每格的畫面尺寸、FAIL 數、WARN 數。
+- 每個問題：哪顆按鈕、在哪、對應的截圖。
+- 截圖和資料存在 `~/duo-verify-runs/`，不會寫進你的專案。
 
-| 項目 | 必要嗎 | 說明 |
+報告只說「模擬器上這 9 格有沒有問題」。真機手感、效能、實體折痕，模擬器測不到。
+
+## 需要準備什麼
+
+| 項目 | 要不要 | 用途 |
 |---|---|---|
-| macOS ＋ Xcode 27.1 以上 | 必須 | 實測用 Xcode 27.2 |
-| iOS 27.1 以上 runtime（含 iPhone Duo） | 必須 | |
-| Claude Code（Desktop 或 CLI） | 擇一 | Desktop 可設任意角度；CLI 只有三個固定姿態 |
-| [SimPilot](https://github.com/peter6601/SimPilot) 或 [RocketSim](https://www.rocketsim.app/) | 自動判讀需要（擇一） | 讀按鈕座標、點擊。兩者的差異見下方「讀元素的引擎」 |
-| Device Hub ＋ 終端機「輔助使用」權限 | CLI 旋轉才需要 | Desktop 不需要 |
-| Python 3 | 必須 | 跑 `duo_check.py`，只用標準函式庫 |
+| Mac ＋ Xcode 27.1 以上 | 必須 | 實測用 Xcode 27.2 |
+| iOS 27.1 以上的模擬器 | 必須 | 才開得出 iPhone Duo |
+| Claude Code | 必須 | Mac app 或終端機 CLI 都可以 |
+| Python 3 | 必須 | 跑檢查腳本 |
+| [SimPilot](https://github.com/peter6601/SimPilot) | 建議 | 讀按鈕位置、點按鈕；CLI 也靠它切姿態 |
+| [RocketSim](https://www.rocketsim.app/) | 替代 | 沒裝 SimPilot 時用；免費版每天有次數限制 |
+| Device Hub ＋「輔助使用」權限 | 只有 CLI | 在終端機切姿態、轉方向 |
+| 測試帳號 | 必須 | 截圖會傳給 Claude |
 
-兩個引擎都沒有也能跑，skill 會改走「看圖模式」：由 Claude 看截圖判斷，精確度到不了 pt，報告會註明。
-
-## 讀元素的引擎
-
-讀按鈕座標和點擊可以用兩個引擎，輸出的 JSON 格式相同，`duo_check.py` 都能直接讀。在 Xcode 27.2 的 9 格矩陣（book、open 各 4 個旋轉＋closed 1 格）實測，兩邊的 FAIL／WARN 逐格一致。
-
-| | SimPilot | RocketSim |
-|---|---|---|
-| 是什麼 | 作者自製的 CLI＋選單列 app，在模擬器裡常駐一個 XCUITest server，附掛已在跑的 app（不重啟） | 第三方 Mac app 的 CLI |
-| 次數限制 | 無 | 免費版每天的 agent session 有限 |
-| 速度 | 第一次約 15 秒（啟動 runner），之後讀元素 0.3–1 秒、點擊約 2 秒 | — |
-| 切姿態、讀 hinge | `simpilot duo pose`／`duo hinge`：三個固定姿態（經 Device Hub）；hinge 角度一律是 null，狀態是推斷的 | CLI 可用 `duo_pose.sh` 切三個固定姿態、讀 hinge 和角度 |
-| 取得 | [github.com/peter6601/SimPilot](https://github.com/peter6601/SimPilot)（MIT） | [rocketsim.app](https://www.rocketsim.app/) |
-
-叫用時可以指定引擎；沒指定時，裝了 SimPilot 就用 SimPilot，RocketSim 回報當日次數用完時也會改用 SimPilot。報告第一行會註明這次用的是哪個引擎。
-
-| 動作 | SimPilot | RocketSim |
-|---|---|---|
-| 讀元素 | `simpilot elements --udid <UDID>` | `rocketsim elements --udid <UDID>` |
-| 點擊 | `simpilot interact tap --label <文字> --udid <UDID>` | `rocketsim interact tap --label <文字> --screen latest --udid <UDID>` |
-| 截圖 | `xcrun simctl io <UDID> screenshot --display=primary`（外螢幕）或 `primary-1`（內螢幕） | `rocketsim screenshot --udid <UDID>` |
-| 跑完後 | `simpilot stop`，讓出 xcodebuild | — |
-
-兩者的行為差異：
-
-- **被蓋住的元素**：RocketSim 會列出被 sheet、fullScreenCover 蓋住的下層元素，要靠 `--baseline` 排除；SimPilot 只列畫面上看得到的，元素數比較少，`--baseline` 照樣可用。
-- **同名按鈕**：SimPilot 只點可點擊（hittable）的元素、button 優先；畫面上和確認視窗裡有同名按鈕時，RocketSim 可能點到別的元素。
-- **點擊結果**：SimPilot 除了 `screen_changed`、`appeared`、`disappeared`，還回 `moved`（位置變了的 label，例如兩張卡片對調）和 `value_changed`。
-- **xcodebuild**：SimPilot 的 runner 本身是一個 xcodebuild，跑著時 `safe-xcodebuild.sh` 會擋掉其他 build。閒置 3 分鐘會自己關，矩陣跑完 skill 也會跑 `simpilot stop`。
+- SimPilot 和 RocketSim 都沒裝，也能跑。
+- 這時改成 Claude 看截圖判斷，精確度比較低，報告會註明。
 
 ## 安裝
 
-```bash
-git clone https://github.com/peter6601/duo-verify-skill.git
-ln -s "$PWD/duo-verify-skill/duo-verify" ~/.claude/skills/duo-verify
-```
+1. 裝 skill：
 
-要用 SimPilot 當引擎時另外裝（需要 [XcodeGen](https://github.com/yonaskolb/XcodeGen)：`brew install xcodegen`）：
+   ```bash
+   git clone https://github.com/peter6601/duo-verify-skill.git
+   ln -s "$PWD/duo-verify-skill/duo-verify" ~/.claude/skills/duo-verify
+   ```
 
-```bash
-git clone https://github.com/peter6601/SimPilot.git
-cd SimPilot
-scripts/make-app.sh
-build/simpilot runner build
-ln -s "$PWD/build/simpilot" /usr/local/bin/simpilot   # skill 用 `command -v simpilot` 找它，要在 PATH 上
-```
+2. 裝 SimPilot（建議）：
 
-clone 下來的資料夾要留著，細節見 [SimPilot 的 README](https://github.com/peter6601/SimPilot#安裝)。
+   ```bash
+   brew install xcodegen
+   git clone https://github.com/peter6601/SimPilot.git
+   cd SimPilot
+   scripts/make-app.sh
+   build/simpilot runner build
+   ln -s "$PWD/build/simpilot" /usr/local/bin/simpilot
+   ```
 
-## 使用
+- 裝一次，之後任何專案都能用 `/duo-verify`。
+- SimPilot 要放在 PATH 上，skill 才找得到它。
+- SimPilot clone 下來的資料夾要留著。細節見 [SimPilot 的 README](https://github.com/peter6601/SimPilot#安裝)。
 
-一次測一個畫面，不用另外寫腳本。叫用時給三句描述：
+## 怎麼執行
+
+1. 開一台 iPhone Duo 模擬器，登入測試帳號。
+2. 把要測的 app 打開。
+3. 用終端機跑的話，打開 Device Hub，選到這台 Duo。
+4. 在 Claude Code 打 `/duo-verify`，給三句描述：
 
 ```text
 /duo-verify
@@ -84,29 +84,57 @@ clone 下來的資料夾要留著，細節見 [SimPilot 的 README](https://gith
 主要按鈕：編輯（要打開編輯頁）、登出（要跳確認視窗）
 ```
 
-- **要驗的畫面**：從 app 首頁怎麼走到那裡
-- **預期長相**：一兩句描述，或 Figma 連結；沒給就只做規則檢查
-- **主要按鈕**：要點的按鈕，加上點了應該發生什麼
-- **引擎**（選填）：`simpilot` 或 `rocketsim`
+- **要驗的畫面**：從首頁怎麼走到那裡。
+- **預期長相**：一兩句話，或 Figma 連結。沒給就只做規則檢查。
+- **主要按鈕**：要點哪些按鈕，點了應該發生什麼。
+- **引擎**（選填）：`simpilot` 或 `rocketsim`。沒寫就優先用 SimPilot。
 
-模擬器上只登入**測試帳號**：截圖會傳給模型。
+5. 等報告。先看第一行和 FAIL 清單，有 FAIL 就修完再跑。
 
-## 檔案
+## 報告怎麼看
 
-```
-duo-verify/
-├── SKILL.md                  skill 本體：流程、判讀規則、回報格式
-├── scripts/
-│   ├── duo_check.py          用實測 safe area 和折痕位置檢查元素座標
-│   ├── duo_pose.sh           用 RocketSim 切姿態並讀回確認
-│   ├── duo_rotate.sh         點 Device Hub 的 Rotate Right
-│   ├── devicehub_pose.sh     沒有 RocketSim 時，用 Device Hub 切姿態
-│   └── safe-xcodebuild.sh    有別的 xcodebuild 在跑就拒絕執行，避免搶同一個模擬器
-└── probe/
-    ├── main.swift            探針 app：在畫面上印出 safe area 與 hinge 狀態
-    ├── Info.plist
-    └── build.sh              編譯並安裝探針 app
-```
+- **FAIL**：按鈕壓到狀態列、底部橫條、超出畫面，或橫跨折痕。要修。
+- **WARN**：文字或圖片壓到邊。Claude 會看截圖判斷是不是刻意的。
+- **交給你判斷**：按鈕在狀態列區域，但沒被時鐘或 Wi-Fi 圖示蓋到。
+- **無法判斷**：姿態沒切到、截圖全黑。報告會寫原因。
+
+## Mac app 和 CLI 差在哪
+
+| | Mac app（Claude Code Desktop） | CLI（終端機） |
+|---|---|---|
+| 切姿態 | 內建，可以設任意角度 | 只有三個固定姿態，經 Device Hub |
+| 轉方向 | 內建按鈕 | Device Hub 的 Rotate Right |
+| 看畫面 | 對話旁邊即時看 | 看截圖檔 |
+| 要先開 | Desktop v4.29.0 以上 | Device Hub，選到這台 Duo |
+
+- 兩邊跑同一個 `/duo-verify`，結果一樣。
+- 要測特定角度、想邊看邊測，用 Mac app。
+- 要重複跑同一套、習慣終端機，用 CLI。
+
+## SimPilot 和 RocketSim
+
+- 兩個都能讀按鈕位置、點按鈕，輸出格式一樣。
+- 同一個畫面實測 9 格，兩邊找到的問題完全一樣。
+
+| | SimPilot | RocketSim |
+|---|---|---|
+| 取得 | [GitHub](https://github.com/peter6601/SimPilot)，免費、開源 | [rocketsim.app](https://www.rocketsim.app/)，付費，有免費版 |
+| 次數限制 | 沒有 | 免費版每天有限 |
+| 同名按鈕 | 只點看得到的那顆 | 可能點錯 |
+| 點完之後 | 會說哪些東西換了位置 | 只說畫面有沒有變 |
+| 讀姿態角度 | 讀不到，只知道是哪個姿態 | 讀得到 |
+
+- SimPilot 跑著時會佔住 xcodebuild。
+- 跑完 skill 會自動關掉它；閒置 3 分鐘也會自己關。
+
+## 已知限制
+
+- 只能測模擬器，不能測實機。
+- 折痕位置是推算的：畫面中線左右各 10pt。
+- 闔起時模擬器不會旋轉，外螢幕橫放測不到。
+- 轉軸有遲滯：同一個角度，亮哪一面要看怎麼折過來。所以一律看畫面尺寸判斷。
+- 轉方向靠 Device Hub 的視窗結構，Xcode 改版可能失效。
+- 實測值只對 Xcode 27.2，換版本要重量（見下方）。
 
 ## 實測值（Xcode 27.2／iOS 27.2）
 
@@ -116,16 +144,25 @@ duo-verify/
 | 內螢幕橫向 | 951×669 | 0／0／34／84 |
 | 內螢幕直向 | 669×951 | 82／0／34／0 |
 
-- 沒有外螢幕橫向：closed 時模擬器不旋轉（Desktop 的旋轉鍵、Device Hub 的 Rotate Right 都一樣），外螢幕一直是直向。
-- 換 Xcode 版本後，用探針 app 重量一次，更新 `duo_check.py` 的 `INSETS` 表。
+- 沒有外螢幕橫向：闔起時模擬器不旋轉。
+- 換 Xcode 版本後，用探針 app 重量，更新 `duo_check.py` 的 `INSETS` 表。
 
-## 已知限制
+## 檔案
 
-- 轉軸有遲滯：同一個角度，亮外螢幕還是內螢幕要看怎麼折過來。一律以畫面尺寸判斷。
-- 折痕位置是推算的（畫面中線 ±10pt），模擬器截圖畫不出折痕。
-- 旋轉依賴 Device Hub 的視窗結構，Xcode 改版可能失效。
-- `xcrun devicectl device orientation set／rotate` 在 Duo 上回報成功但畫面不會轉，不能拿來取代 Device Hub。
-- SimPilot 的 `moved` 只看 label 和位置：打開 sheet 時，被蓋住的元素和 sheet 裡的同名元素也會算進來。
+```
+duo-verify/
+├── SKILL.md                  skill 本體：流程、判讀規則、報告格式
+├── scripts/
+│   ├── duo_check.py          用實測 safe area 和折痕位置檢查按鈕座標
+│   ├── duo_pose.sh           用 RocketSim 切姿態並確認
+│   ├── duo_rotate.sh         點 Device Hub 的 Rotate Right
+│   ├── devicehub_pose.sh     沒有 RocketSim 時，用 Device Hub 切姿態
+│   └── safe-xcodebuild.sh    別的 xcodebuild 在跑時拒絕執行，避免搶模擬器
+└── probe/
+    ├── main.swift            探針 app：在畫面上印出 safe area 和姿態
+    ├── Info.plist
+    └── build.sh              編譯並安裝探針 app
+```
 
 ## 授權
 
