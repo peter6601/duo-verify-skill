@@ -1,6 +1,10 @@
 # duo-verify
 
+**中文** | [English](README.en.md)
+
 讓 Claude Code 在 **iPhone Duo 模擬器**上，自己幫你驗一個畫面。
+
+相關：[SimPilot](https://github.com/peter6601/SimPilot)：讀按鈕位置、點按鈕、切 Duo 姿態的工具，這個 skill 預設用它。
 
 ## 目的
 
