@@ -20,7 +20,7 @@
 | macOS ＋ Xcode 27.1 以上 | 必須 | 實測用 Xcode 27.2 |
 | iOS 27.1 以上 runtime（含 iPhone Duo） | 必須 | |
 | Claude Code（Desktop 或 CLI） | 擇一 | Desktop 可設任意角度；CLI 只有三個固定姿態 |
-| SimPilot 或 [RocketSim](https://www.rocketsim.app/) | 自動判讀需要（擇一） | 讀按鈕座標、點擊。兩者的差異見下方「讀元素的引擎」 |
+| [SimPilot](https://github.com/peter6601/SimPilot) 或 [RocketSim](https://www.rocketsim.app/) | 自動判讀需要（擇一） | 讀按鈕座標、點擊。兩者的差異見下方「讀元素的引擎」 |
 | Device Hub ＋ 終端機「輔助使用」權限 | CLI 旋轉才需要 | Desktop 不需要 |
 | Python 3 | 必須 | 跑 `duo_check.py`，只用標準函式庫 |
 
@@ -36,7 +36,7 @@
 | 次數限制 | 無 | 免費版每天的 agent session 有限 |
 | 速度 | 第一次約 15 秒（啟動 runner），之後讀元素 0.3–1 秒、點擊約 2 秒 | — |
 | 切姿態、讀 hinge | `simpilot duo pose`／`duo hinge`：三個固定姿態（經 Device Hub）；hinge 角度一律是 null，狀態是推斷的 | CLI 可用 `duo_pose.sh` 切三個固定姿態、讀 hinge 和角度 |
-| 取得 | 目前未公開 | [rocketsim.app](https://www.rocketsim.app/) |
+| 取得 | [github.com/peter6601/SimPilot](https://github.com/peter6601/SimPilot)（MIT） | [rocketsim.app](https://www.rocketsim.app/) |
 
 叫用時可以指定引擎；沒指定時，裝了 SimPilot 就用 SimPilot，RocketSim 回報當日次數用完時也會改用 SimPilot。報告第一行會註明這次用的是哪個引擎。
 
@@ -60,6 +60,18 @@
 git clone https://github.com/peter6601/duo-verify-skill.git
 ln -s "$PWD/duo-verify-skill/duo-verify" ~/.claude/skills/duo-verify
 ```
+
+要用 SimPilot 當引擎時另外裝（需要 [XcodeGen](https://github.com/yonaskolb/XcodeGen)：`brew install xcodegen`）：
+
+```bash
+git clone https://github.com/peter6601/SimPilot.git
+cd SimPilot
+scripts/make-app.sh
+build/simpilot runner build
+ln -s "$PWD/build/simpilot" /usr/local/bin/simpilot   # skill 用 `command -v simpilot` 找它，要在 PATH 上
+```
+
+clone 下來的資料夾要留著，細節見 [SimPilot 的 README](https://github.com/peter6601/SimPilot#安裝)。
 
 ## 使用
 

@@ -22,7 +22,7 @@ description: 功能或畫面寫完後，在 iPhone Duo 模擬器上自己跑一�
 | `scripts/devicehub_pose.sh "Closed\|Partially Open\|Open"` | 沒有 RocketSim 時，用 Device Hub 切姿態 |
 | `probe/build.sh` | 探針 app：遇到 `duo_check.py` 不認得的畫面尺寸時，用它量 safe area |
 
-SimPilot 不在這個資料夾，是另外裝的 CLI（自製，取代 `rocketsim elements`／`interact tap`／`duo pose`／`duo hinge`，沒有次數限制）：`SP=$(command -v simpilot || echo "$HOME/Documents/MacOS Project/SimPilot/build/simpilot")`。
+SimPilot 不在這個資料夾，是另外裝的 CLI（[https://github.com/peter6601/SimPilot](https://github.com/peter6601/SimPilot)，取代 `rocketsim elements`／`interact tap`／`duo pose`／`duo hinge`，沒有次數限制）：`SP=$(command -v simpilot)`。沒裝時不要自己裝，照第 0 步第 3 條改用 RocketSim；使用者想裝就給他那個 repo README 的「安裝」段。
 
 ## 0. 前置檢查（任一不過就停下來回報，不要硬跑）
 
