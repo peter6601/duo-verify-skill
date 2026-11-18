@@ -35,7 +35,7 @@
 | 是什麼 | 作者自製的 CLI＋選單列 app，在模擬器裡常駐一個 XCUITest server，附掛已在跑的 app（不重啟） | 第三方 Mac app 的 CLI |
 | 次數限制 | 無 | 免費版每天的 agent session 有限 |
 | 速度 | 第一次約 15 秒（啟動 runner），之後讀元素 0.3–1 秒、點擊約 2 秒 | — |
-| 切姿態、讀 hinge | 不支援（Desktop 用內建工具，CLI 用 Device Hub） | CLI 可用 `duo_pose.sh` 切三個固定姿態、讀 hinge |
+| 切姿態、讀 hinge | `simpilot duo pose`／`duo hinge`：三個固定姿態（經 Device Hub）；hinge 角度一律是 null，狀態是推斷的 | CLI 可用 `duo_pose.sh` 切三個固定姿態、讀 hinge 和角度 |
 | 取得 | 目前未公開 | [rocketsim.app](https://www.rocketsim.app/) |
 
 叫用時可以指定引擎；沒指定時，裝了 SimPilot 就用 SimPilot，RocketSim 回報當日次數用完時也會改用 SimPilot。報告第一行會註明這次用的是哪個引擎。

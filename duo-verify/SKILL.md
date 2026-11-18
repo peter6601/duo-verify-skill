@@ -22,7 +22,7 @@ description: 功能或畫面寫完後，在 iPhone Duo 模擬器上自己跑一�
 | `scripts/devicehub_pose.sh "Closed\|Partially Open\|Open"` | 沒有 RocketSim 時，用 Device Hub 切姿態 |
 | `probe/build.sh` | 探針 app：遇到 `duo_check.py` 不認得的畫面尺寸時，用它量 safe area |
 
-SimPilot 不在這個資料夾，是另外裝的 CLI（自製，取代 `rocketsim elements`／`interact tap`，沒有次數限制）：`SP=$(command -v simpilot || echo "$HOME/Documents/MacOS Project/SimPilot/build/simpilot")`。
+SimPilot 不在這個資料夾，是另外裝的 CLI（自製，取代 `rocketsim elements`／`interact tap`／`duo pose`／`duo hinge`，沒有次數限制）：`SP=$(command -v simpilot || echo "$HOME/Documents/MacOS Project/SimPilot/build/simpilot")`。
 
 ## 0. 前置檢查（任一不過就停下來回報，不要硬跑）
 
@@ -42,16 +42,18 @@ SimPilot 不在這個資料夾，是另外裝的 CLI（自製，取代 `rocketsi
      - Desktop：切姿態、旋轉、截圖用內建工具；CLI：切姿態用 Device Hub（`$H/scripts/devicehub_pose.sh`），截圖用 `xcrun simctl io $D screenshot --display=primary|primary-1`。
      - 跳過 `duo_check.py`，由 Claude 讀截圖判斷按鈕有沒有壓到狀態列、home indicator、折痕。
      - 報告第一行註明「看圖模式：未做座標檢查，精確度到不了 pt」。
-4. 判斷執行環境，決定切姿態和旋轉用哪一套（見下方「兩種環境」）。CLI 環境要旋轉時，Device Hub 視窗要開著（`pgrep DeviceHub`）；沒開就只跑旋轉 0，報告註明旋轉沒測。
+4. 判斷執行環境，決定切姿態和旋轉用哪一套（見下方「兩種環境」）。CLI 環境的 Device Hub 視窗要開著（`pgrep DeviceHub`），而且選在這台 Duo 上：
+   - 有 SimPilot：切姿態和旋轉都靠它。沒開就停下來請使用者打開 Device Hub。
+   - 沒有 SimPilot：切姿態用 RocketSim，Device Hub 只用來旋轉；沒開就只跑旋轉 0，報告註明旋轉沒測。
 5. 模擬器要登入的話，停下來請使用者用**測試帳號**登入。截圖會送到 Anthropic。
 
 ## 兩種環境
 
 | 動作 | Claude Code Desktop（有內建 iOS Simulator 工具） | CLI |
 |---|---|---|
-| 切姿態 | Desktop 的 `duo_pose`，可設任意角度 | `$H/scripts/duo_pose.sh closed\|book\|open`（RocketSim，只有三個固定姿態） |
+| 切姿態 | Desktop 的 `duo_pose`，可設任意角度 | 有 SimPilot：`"$SP" duo pose closed\|book\|open --udid $D`（點 Device Hub 的按鈕，自己確認亮的那面、最多重試 3 次）；沒有：`$H/scripts/duo_pose.sh closed\|book\|open`（RocketSim）。兩者都只有三個固定姿態 |
 | 旋轉 | Desktop 的 `rotate` | `$H/scripts/duo_rotate.sh`（Device Hub＋輔助使用權限） |
-| 讀回 hinge | Desktop 的 `duo_hinge` | `rocketsim duo hinge --udid $D`（SimPilot 還沒有 hinge 指令） |
+| 讀回 hinge | Desktop 的 `duo_hinge` | 有 SimPilot：`"$SP" duo hinge --udid $D`，**`hinge_angle_degrees` 一律是 null**，`hinge_state` 是推斷的（見下方說明）；沒有：`rocketsim duo hinge --udid $D` |
 | 元素座標、點擊 | 依 `$ENG`，見下表 | 依 `$ENG`，見下表 |
 
 | 動作 | SimPilot | RocketSim |
@@ -63,9 +65,13 @@ SimPilot 不在這個資料夾，是另外裝的 CLI（自製，取代 `rocketsi
 
 兩個引擎的 JSON 格式相同，`duo_check.py` 都能讀；同一格的 FAIL／WARN 在 Xcode 27.2 實測逐格一致。Desktop 環境用 SimPilot 時，整輪不會呼叫任何 `rocketsim` 指令。
 
+`simpilot duo hinge` 讀不到角度（模擬器外面沒有公開 API 讀得到），`hinge_state` 是這樣推斷的：亮外螢幕就是 `closed`；亮內螢幕時，靠 SimPilot 上次 `duo pose` 設的姿態分 `partiallyOpen`／`openFlat`，分不出來回 `unknown`。所以 CLI 用 SimPilot 時：
+- 切姿態一律用 `"$SP" duo pose`，不要用 Device Hub 或其他方式手動切，否則 `hinge_state` 會是舊的推斷。
+- 判斷是哪一面，以 `active_display`（outer／inner）和 `elements` 的 canvasSize 為準；報告裡的角度寫「無（SimPilot 讀不到）」，不要自己填數字。
+
 **book 一定要測到內螢幕。** 轉軸有很大的遲滯：從 Closed 慢慢掀開，到約 150° 都還停在外螢幕；從 Open 慢慢關上，到約 25° 都還在內螢幕；從 Closed 一次跳到 84° 以上才會立刻換到內螢幕。所以 book 的做法是：
 - Desktop：先切到 Open，再把角度設成 130°。
-- CLI：`scripts/duo_pose.sh book`（RocketSim 是一次跳過去，會到內螢幕）。
+- CLI：`"$SP" duo pose book`（內部先切 Open 再切 Partially Open）或 `scripts/duo_pose.sh book`（RocketSim 是一次跳過去），都會到內螢幕。
 - 兩邊都要看 `elements` 的 canvasSize 是不是 951×669 或 669×951。如果是 466×678，這一格就是「外螢幕半開」，記下來，不算 book。
 - 要測「慢慢掀開時一直停在外螢幕」的情境，另外加一格「外螢幕半開」：Desktop 從 Closed 每次加 10° 掀到 120°。
 
@@ -121,7 +127,7 @@ python3 $H/scripts/duo_check.py $RUN/<pose>_r<n>.json --pose <pose> --baseline $
    不要寫「Duo 上沒問題」：模擬器測不到真機手感、效能和實體折痕。
 2. 矩陣表：姿態 × 旋轉，每格寫畫面尺寸、FAIL 數、WARN 數、按鈕可點、狀態保留。
 3. 每個 FAIL：元素、位置、截圖檔名、一句影響。同一個元素在多格重複時合併成一條。
-4. 沒測到的：CLI 只測得到 RocketSim 的固定 book 角度，任意角度要用 Desktop；旋轉失敗的格；只點了旋轉 0 的按鈕。
+4. 沒測到的：CLI 只測得到固定的 book 姿態（用 SimPilot 時連角度都沒有），任意角度要用 Desktop；旋轉失敗的格；只點了旋轉 0 的按鈕。
 5. 只測試，不改 code、不 commit。
 
 ## 已知限制
@@ -130,6 +136,7 @@ python3 $H/scripts/duo_check.py $RUN/<pose>_r<n>.json --pose <pose> --baseline $
 - 轉軸遲滯：亮哪一面、app 收到的 hinge 狀態，都取決於怎麼折過來，不只看角度。外螢幕亮著時 app 在 154° 還收到 `closed`。一律以讀回的畫面尺寸判斷是哪一面。
 - `rocketsim screenshot` 依 hinge 判斷要截哪一面；用 Desktop 設角度造成「角度跟亮的那面不一致」時，可能截到全黑。截圖尺寸要對過。
 - `duo_check.py` 遇到 book 但外螢幕亮著時，會跳過折痕檢查。
-- CLI 環境即使用 SimPilot，切姿態（`scripts/duo_pose.sh`）和讀 hinge 還是走 RocketSim，仍會用到它的次數；要完全不用 RocketSim，CLI 改用 `scripts/devicehub_pose.sh` 切姿態。
+- CLI 環境有 SimPilot 時，整輪不會呼叫任何 `rocketsim` 指令。
+- `simpilot duo pose` 回 `devicehub_wrong_device`（Device Hub 選的不是這台）、`devicehub_not_running` 或 `devicehub_click_failed`（多半是缺「輔助使用」權限）時，停下來告訴使用者，不要改去點別台。回 `pose_not_reached` 就把那個姿態的格標「無法判斷」。
 - SimPilot 的 `moved` 只看 label 和位置：打開 sheet 時，被蓋住的元素和 sheet 裡的同名元素也會算進來。
 - 旋轉依賴 Device Hub 視窗結構與「輔助使用」權限，Xcode 改版可能失效。
