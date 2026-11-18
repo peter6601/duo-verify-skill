@@ -96,11 +96,16 @@ python3 $H/scripts/duo_check.py $RUN/<pose>_r<n>.json --pose <pose> --baseline $
 
 姿態順序 closed → book → open，每個姿態旋轉 0–3。一個 shell 指令裡不要 `rm`；換新資料夾即可。
 
+**closed 時模擬器不旋轉，r0–r3 記成同一格。** 闔起時按旋轉（Desktop 的 `rotate` 或 Device Hub 的 Rotate Right），devicectl 的裝置方向一直是 portrait、外螢幕一直是 rot0；同一個按鈕在 book／open 都轉得動（Xcode 27.2 實測，Desktop 和 CLI 都一樣）。所以：
+- closed 只跑 r0，不用轉；矩陣表寫一列「closed r0–r3（模擬器闔起時不旋轉）」。
+- 不要標成「無法判斷」或「旋轉失敗」，也不要重按。
+- 報告的「沒測到」寫「外螢幕橫放：模擬器測不到」。
+
 **每轉一次都要確認真的轉了，以及 app 有沒有跟著轉。** 轉完用 `xcrun devicectl device info displays --device $D` 讀亮著那一面（`active: true`）的 `currentOrientation`（rot0 直向、rot90／rot270 橫向、rot180 上下顛倒），再對照 `elements` 的 canvasSize。app 不支援的方向，裝置轉了、畫面停在 app 支援的方向。
 - devicectl 是 rot180（上下顛倒）：canvasSize 和直向一樣都是 669×951 或 466×678，光看尺寸分不出 app 有沒有轉。跟直向那格的截圖比，一模一樣就是 app 不支援上下顛倒，這一格記「app 不支援此方向，畫面停在直向」，不重複判讀。
 - devicectl 的方向變了，但 canvasSize 的長寬方向跟它對不上（例：rot90 卻還是 669×951）：同樣記「app 不支援此方向」。
 - 外螢幕鎖直向的 app，四個方向的畫面都一樣，同樣在報告註明。
-- devicectl 的方向也沒變：才是旋轉失敗，這一格標「無法判斷」。不要以為是旋轉失敗就一直重按，先看 devicectl。
+- devicectl 的方向也沒變：才是旋轉失敗，這一格標「無法判斷」（closed 除外，見上方）。不要以為是旋轉失敗就一直重按，先看 devicectl。
 
 每一格另外做：
 1. **讀截圖**（Read 圖檔）：文字有沒有被截斷、元件有沒有重疊、跟預期長相是否一致。
@@ -127,7 +132,7 @@ python3 $H/scripts/duo_check.py $RUN/<pose>_r<n>.json --pose <pose> --baseline $
    不要寫「Duo 上沒問題」：模擬器測不到真機手感、效能和實體折痕。
 2. 矩陣表：姿態 × 旋轉，每格寫畫面尺寸、FAIL 數、WARN 數、按鈕可點、狀態保留。
 3. 每個 FAIL：元素、位置、截圖檔名、一句影響。同一個元素在多格重複時合併成一條。
-4. 沒測到的：CLI 只測得到固定的 book 姿態（用 SimPilot 時連角度都沒有），任意角度要用 Desktop；旋轉失敗的格；只點了旋轉 0 的按鈕。
+4. 沒測到的：CLI 只測得到固定的 book 姿態（用 SimPilot 時連角度都沒有），任意角度要用 Desktop；外螢幕橫放（closed 時模擬器不旋轉）；旋轉失敗的格；只點了旋轉 0 的按鈕。
 5. 只測試，不改 code、不 commit。
 
 ## 已知限制
