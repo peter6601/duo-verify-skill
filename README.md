@@ -4,7 +4,7 @@
 
 功能寫完後打 `/duo-verify`，Claude 會：
 
-- 把 Duo 切到 closed、book（半折）、open 三個姿態，每個姿態再旋轉 4 個方向
+- 把 Duo 切到 closed、book（半折）、open 三個姿態；book、open 各旋轉 4 個方向，closed 1 格（模擬器闔起時不旋轉），共 9 格
 - 讀每個按鈕的座標，自動檢查有沒有壓到狀態列、home indicator 區，或橫跨折痕
 - 實際點主要按鈕，確認有反應
 - 換姿態後確認畫面狀態有保留
@@ -28,7 +28,7 @@
 
 ## 讀元素的引擎
 
-讀按鈕座標和點擊可以用兩個引擎，輸出的 JSON 格式相同，`duo_check.py` 都能直接讀。在 Xcode 27.2 的 12 格矩陣（3 個姿態 × 4 個旋轉）實測，兩邊的 FAIL／WARN 逐格一致。
+讀按鈕座標和點擊可以用兩個引擎，輸出的 JSON 格式相同，`duo_check.py` 都能直接讀。在 Xcode 27.2 的 9 格矩陣（book、open 各 4 個旋轉＋closed 1 格）實測，兩邊的 FAIL／WARN 逐格一致。
 
 | | SimPilot | RocketSim |
 |---|---|---|

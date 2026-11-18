@@ -1,6 +1,6 @@
 ---
 name: duo-verify
-description: 功能或畫面寫完後，在 iPhone Duo 模擬器上自己跑一輪驗證：三個姿態（closed／book／open）× 四個旋轉方向，自動檢查按鈕有沒有落進狀態列、home indicator 區或橫跨折痕，實際點主要按鈕、比對截圖與預期、檢查切換時狀態有沒有保留，最後給「在這張矩陣內可以出貨／有問題／無法判斷」的結論。使用者說「duo-verify」「在 Duo 上驗一下」「Duo 上會不會有問題」時使用。
+description: 功能或畫面寫完後，在 iPhone Duo 模擬器上自己跑一輪驗證：9 格矩陣（book、open 各 4 個旋轉方向＋closed 1 格，模擬器闔起時不旋轉），自動檢查按鈕有沒有落進狀態列、home indicator 區或橫跨折痕，實際點主要按鈕、比對截圖與預期、檢查切換時狀態有沒有保留，最後給「在這張矩陣內可以出貨／有問題／無法判斷」的結論。使用者說「duo-verify」「在 Duo 上驗一下」「Duo 上會不會有問題」時使用。
 ---
 
 # /duo-verify：在 iPhone Duo 模擬器上驗證一個畫面
