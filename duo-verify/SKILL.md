@@ -134,6 +134,10 @@ python3 $H/scripts/duo_check.py $RUN/<pose>_r<n>.json --pose <pose> --baseline $
 3. 每個 FAIL：元素、位置、截圖檔名、一句影響。同一個元素在多格重複時合併成一條。
 4. 沒測到的：CLI 只測得到固定的 book 姿態（用 SimPilot 時連角度都沒有），任意角度要用 Desktop；外螢幕橫放（closed 時模擬器不旋轉）；旋轉失敗的格；只點了旋轉 0 的按鈕。
 5. 只測試，不改 code、不 commit。
+6. **有 FAIL 時，最後一行建議交棒修正**（不要自己改）：
+   - session 有 Xcode plugin 的 `app-resizability` skill（`xcode@claude-plugins-official`，由 `xcrun agent plugin` 匯出）時，建議交給它修。這類 FAIL 的根因多半在它處理的五類 API：`UIScreen.main`、`interfaceOrientation`、application lifecycle（沒改成 scene）、假設上下左右對稱或不會變動的 safe area、`userInterfaceIdiom`。交棒時附上 FAIL 清單（元素、姿態×旋轉、位置），讓它從這些畫面的 code 找起。
+   - 沒有這個 skill：只列 FAIL，修法交給使用者。
+   - 修完要重跑一次 duo-verify，至少重跑原本 FAIL 的那幾格，才算修好。
 
 ## 已知限制
 

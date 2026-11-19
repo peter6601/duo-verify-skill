@@ -102,6 +102,8 @@
 - **交給你判斷**：按鈕在狀態列區域，但沒被時鐘或 Wi-Fi 圖示蓋到。
 - **無法判斷**：姿態沒切到、截圖全黑。報告會寫原因。
 
+duo-verify 只測試，不改 code。有 FAIL 時，如果你裝了 Xcode 匯出的 plugin（`xcode@claude-plugins-official`），報告會建議交給它的 `app-resizability` skill 修。這類問題多半出在 `UIScreen.main`、`interfaceOrientation`、safe area 的假設這幾類 API。修完再跑一次 duo-verify 確認。
+
 ## Mac app 和 CLI 差在哪
 
 | | Mac app（Claude Code Desktop） | CLI（終端機） |

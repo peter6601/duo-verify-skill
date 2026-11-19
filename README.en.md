@@ -102,6 +102,8 @@ Buttons: Edit (opens the edit page), Sign Out (shows a confirmation)
 - **Your call**: a button is in the status bar area but not covered by the clock or Wi-Fi icon.
 - **Can't judge**: the pose didn't switch, or the screenshot is black. The report says why.
 
+duo-verify only tests; it doesn't change code. When there's a FAIL and you have the plugin Xcode exports (`xcode@claude-plugins-official`), the report suggests handing the fix to its `app-resizability` skill. These problems usually come from `UIScreen.main`, `interfaceOrientation`, or assumptions about the safe area. Run duo-verify again after the fix.
+
 ## Mac app vs CLI
 
 | | Mac app (Claude Code Desktop) | CLI (terminal) |
