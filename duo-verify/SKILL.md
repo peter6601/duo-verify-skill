@@ -29,6 +29,7 @@ SimPilot 不在這個資料夾，是另外裝的 CLI（[https://github.com/peter
 1. **要 build 時，一律經過 `$H/scripts/safe-xcodebuild.sh`**：這台機器有別的 xcodebuild 在跑，它會 exit 1 並印出對方的 PID 和指令。exit 1 就停，把對方的 PID 和指令告訴使用者，不要 build、不要重試到通過。
    - 自己下 xcodebuild：`$H/scripts/safe-xcodebuild.sh <xcodebuild 參數>`，取代直接呼叫 `xcodebuild`。
    - 用 XcodeBuildMCP 或 Desktop 內建的 build：它們不經過這支腳本，先**單獨一個指令**跑 `$H/scripts/safe-xcodebuild.sh --check`，exit 0 才 build。
+   - 用 Xcode MCP（`xcode@claude-plugins-official` 的 `BuildProject`、`RunProject`、`RunAllTests`、`RunSomeTests`）：同樣先單獨跑 `--check`，exit 0 才 build。另外要知道這個檢查是單向的：Xcode 自己的 build 不是 `xcodebuild` 行程，`--check` 看不到它，別人用 Xcode MCP 或在 Xcode 裡按 Run 時這裡照樣會放行。所以矩陣跑到一半不要對 `$D` 呼叫 Xcode MCP 的 Run 或 Test，它會重新安裝 app 到同一台模擬器，把畫面切走。要重新安裝就停下矩陣，裝完從頭跑。
    - 只用已安裝的 app、不 build 時，別人的 xcodebuild 不影響，照常跑。
 2. `xcrun simctl list devices booted | grep "iPhone Duo"` 拿 UDID（下稱 `$D`）。沒有就請使用者開一台。
 3. **選讀元素的引擎**（下稱 `$ENG`）。使用者指定就照用；沒指定時 `[ -x "$SP" ]` 成立就用 SimPilot，否則用 RocketSim。
