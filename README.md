@@ -6,6 +6,8 @@
 
 相關：[SimPilot](https://github.com/peter6601/SimPilot)：讀按鈕位置、點按鈕、切 Duo 姿態的工具，這個 skill 預設用它。
 
+簡報：[九格巡檢](https://ios-dev-skill-deck.vercel.app/duo/)：一次看懂 duo-verify 在跑什麼、怎麼判、報告怎麼看。
+
 ## 目的
 
 - iPhone Duo 是折疊機：有外螢幕、內螢幕，中間有折痕。

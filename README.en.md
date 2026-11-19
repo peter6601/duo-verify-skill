@@ -6,6 +6,8 @@ Let Claude Code check a screen on the **iPhone Duo simulator** for you.
 
 Related: [SimPilot](https://github.com/peter6601/SimPilot), a tool that reads button positions, taps buttons and switches Duo poses. This skill uses it by default.
 
+Slides: [Nine-cell inspection](https://ios-dev-skill-deck.vercel.app/duo/) (Traditional Chinese): what duo-verify runs, how it judges, and how to read the report.
+
 ## Why
 
 - iPhone Duo is a foldable: it has an outer display, an inner display and a fold in the middle.
